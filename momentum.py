@@ -252,10 +252,20 @@ class CrossAssetMomentum():
     def performance_analytics(self, returns):
         pf.create_returns_tear_sheet(returns)
 
-    """
-    7. Utilities
-    """
     def bool_converter(self, bool_var):
+        """Returns Integer Value from Boolean Value
+
+        Parameters
+        ----------
+        bool_var : boolean
+            Boolean variables representing trade signals
+
+        Returns
+        -------
+        result : int
+            Integer variables representing trade signals
+
+        """
         if bool_var == True:
             result = 1
         elif bool_var == False:
@@ -263,6 +273,18 @@ class CrossAssetMomentum():
         return result
 
 def get_price_df(url):
+    """Returns price dataframe from given URL
+
+    Parameters
+    ----------
+    url : string
+        URL containing dataset
+
+    Returns
+    -------
+    df : dataframe
+        Price dataframe from URL
+    """
     df = pd.read_csv(url).dropna()
     df.index = pd.to_datetime(df['Date'])
     df = df.drop(columns=['Date'])
