@@ -63,9 +63,25 @@ class CrossAssetMomentum():
         return holding_returns
 
     def absolute_momentum(self, prices, lookback, long_only=False):
-        log_returns = np.log(prices / prices.shift(lookback))
-        long_signal = (log_returns > 0).applymap(self.bool_converter)
-        short_signal = -(log_returns < 0).applymap(self.bool_converter)
+        """Returns Absolute Momentum Signals
+        
+        Parameters
+        ----------
+        prices : dataframe
+            Historical daily prices
+        lookback : int
+            Lookback window for signal generation
+        long_only : bool, optional
+            Indicator for long-only momentum, False is default value
+        
+        Returns
+        -------
+        returns : dataframe
+            Absolute momentum signals     
+        """    
+        returns = prices.pct_change(periods=lookback).fillna(0)
+        long_signal = (returns > 0).applymap(self.bool_converter)
+        short_signal = -(returns < 0).applymap(self.bool_converter)
         if long_only == True:
             signal = long_signal
         else:
@@ -73,8 +89,26 @@ class CrossAssetMomentum():
         return signal
     
     def relative_momentum(self, prices, lookback, n_selection, long_only=False):
-        log_returns = np.log(prices / prices.shift(lookback))
-        rank = log_returns.rank(axis=1, ascending=False)
+        """Returns Relative Momentum Signals
+        
+        Parameters
+        ----------
+        prices : dataframe
+            Historical daily prices
+        lookback : int
+            Lookback Window for Signal Generation
+        n_selection : int
+            Number of asset to be traded at one side
+        long_only : bool, optional
+            Indicator for long-only momentum, False is default value
+        
+        Returns
+        -------
+        returns : dataframe
+            Relative momentum signals     
+        """
+        returns = prices.pct_change(periods=lookback).fillna(0)
+        rank = returns.rank(axis=1, ascending=False)
         long_signal = (rank <= n_selection).applymap(self.bool_converter)
         short_signal = -(rank >= len(rank.columns) - n_selection + 1).applymap(self.bool_converter)
         if long_only == True:
@@ -84,15 +118,42 @@ class CrossAssetMomentum():
         return signal
     
     def dual_momentum(self, prices, lookback, n_selection, long_only=False):
+        """Returns Dual Momentum Signals
+        
+        Parameters
+        ----------
+        prices : dataframe
+            Historical daily prices
+        lookback : int
+            Lookback Window for Signal Generation
+        n_selection : int
+            Number of asset to be traded at one side
+        long_only : bool, optional
+            Indicator for long-only momentum, False is default value
+        
+        Returns
+        -------
+        returns : dataframe
+            Dual momentum signals     
+        """
         abs_signal = self.absolute_momentum(prices, lookback, long_only)
         rel_signal = self.relative_momentum(prices, lookback, n_selection, long_only)
         signal = (abs_signal == rel_signal).applymap(self.bool_converter) * abs_signal
         return signal
 
-    """
-    3. Cross-sectional Risk Models
-    """
     def equal_weight(self, signal):
+        """Returns Equal Weights
+
+        Parameters
+        ----------
+        signal : dataframe
+            Momentum signal dataframe
+
+        Returns
+        -------
+        weight : dataframe
+            Equal weights for cross-asset momentum portfolio
+        """
         total_signal = 1 / abs(signal).sum(axis=1)
         total_signal.replace(np.inf, 0, inplace=True)
         weight = pd.DataFrame(index=signal.index, columns=signal.columns).fillna(value=1)
@@ -100,6 +161,21 @@ class CrossAssetMomentum():
         return weight
 
     def equal_marginal_volatility(self, returns, signal):
+        """Returns Equal Marginal Volatility (Inverse Volatility)
+        
+        Parameters
+        ----------
+        returns : dataframe
+            Historical daily returns
+        signal : dataframe
+            Momentum signal dataframe
+
+        Returns
+        -------
+        weight : dataframe
+            Weights using equal marginal volatility
+
+        """
         vol = (returns.rolling(252).std() * np.sqrt(252)).fillna(0)
         vol_signal = vol * abs(signal)
         inv_vol = 1 / vol_signal
@@ -107,27 +183,69 @@ class CrossAssetMomentum():
         weight = inv_vol.div(inv_vol.sum(axis=1), axis=0).fillna(0)
         return weight
 
-    """
-    4. Time-series Risk Models
-    """
     def volatility_targeting(self, returns, target_vol=0.01):
+        """Returns Weights based on Vol Target
+        
+        Parameters
+        ----------
+        returns : dataframe
+            Historical daily returns
+        target_vol : float
+            Target volatility
+
+        Returns
+        -------
+        weight : dataframe
+            Weights using equal marginal volatility
+
+        """
         weight = target_vol / (returns.rolling(252).std() * np.sqrt(252)).fillna(0)
         weight.replace([np.inf, -np.inf], 0, inplace=True)
         weight = weight.shift(1).fillna(0)
         return weight
 
-    """
-    5. Transaction Cost
-    """
     def transaction_cost(self, signal, cost=0.001):
+        """Returns Transaction Costs
+        
+        Parameters
+        ----------
+        signal : dataframe
+            Momentum signal dataframe
+        cost : float, optional
+            Transaction cost (%) per each trade. The default is 0.001.
+
+        Returns
+        -------
+        cost_df : dataframe
+            Transaction cost dataframe
+
+        """
         cost_df = (signal.diff() != 0).applymap(self.bool_converter) * cost
         cost_df.iloc[0] = 0
         return cost_df
     
-    """
-    6. Backtester
-    """
     def backtest(self, returns, signal, cost, rebalance_weight, weighting):
+        """Returns Portfolio Returns without Time-Series Risk Weights
+
+        Parameters
+        ----------
+        returns : dataframe
+            Historical daily returns
+        signal : dataframe
+            Momentum signal dataframe
+        cost : dataframe
+            Transaction cost dataframe
+        rebalance_weight : float
+            Rebalance weight
+        weighting : dataframe
+            Weighting dataframe
+
+        Returns
+        -------
+        port_rets : dataframe
+            Portfolio returns dataframe without applying time-series risk model
+
+        """
         port_rets = ((signal * returns - cost) * rebalance_weight * weighting).sum(axis=1)
         return port_rets
 
