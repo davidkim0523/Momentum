@@ -155,7 +155,7 @@ class CrossAssetMomentum():
             Equal weights for cross-asset momentum portfolio
         """
         total_signal = 1 / abs(signal).sum(axis=1)
-        total_signal.replace(np.inf, 0, inplace=True)
+        total_signal.replace([np.inf, -np.inf], 0, inplace=True)
         weight = pd.DataFrame(index=signal.index, columns=signal.columns).fillna(value=1)
         weight = weight.mul(total_signal, axis=0)
         return weight
