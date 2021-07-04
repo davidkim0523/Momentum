@@ -249,6 +249,18 @@ class CrossAssetMomentum():
         return port_rets
 
     def performance_analytics(self, returns):
+        """Returns Perforamnce Analytics using pyfolio package
+
+        Parameters
+        ----------
+        returns : series
+            backtestd portfolio returns
+
+        Returns
+        -------
+        None
+
+        """
         pf.create_returns_tear_sheet(returns)
 
     def bool_converter(self, bool_var):
