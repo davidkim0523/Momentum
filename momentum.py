@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import pyfolio as pf
 
 class CrossAssetMomentum():
@@ -23,10 +22,10 @@ class CrossAssetMomentum():
         self.rebalance_weight = 1 / holding_period
         self.cost = self.transaction_cost(self.signal, cost)
 
-        self.backtest_res = self.backtest(self.holding_returns, self.signal, self.cost, self.rebalance_weight, self.cs_risk_weight)
-        self.backtest_result = self.backtest_res * self.volatility_targeting(self.backtest_res)
+        self.portfolio_wo_cash = self.backtest(self.holding_returns, self.signal, self.cost, self.rebalance_weight, self.cs_risk_weight)
+        self.portfolio = self.portfolio_wo_cash * self.volatility_targeting(self.portfolio_wo_cash)
 
-        self.performance_analytics(self.backtest_result)        
+        self.performance_analytics(self.portfolio)              
 
     def get_returns(self, prices):
         """Returns the historical daily returns
@@ -189,13 +188,13 @@ class CrossAssetMomentum():
         Parameters
         ----------
         returns : dataframe
-            Historical daily returns
-        target_vol : float
-            Target volatility
+            Historical daily returns of backtested portfolio
+        target_vol : float, optional
+            Target volatility, Default target volatility is 1%
 
         Returns
         -------
-        weight : dataframe
+        weights : dataframe
             Weights using equal marginal volatility
 
         """
@@ -278,12 +277,12 @@ def get_price_df(url):
     Parameters
     ----------
     url : string
-        URL containing dataset
+        URL which contains dataset
 
     Returns
     -------
     df : dataframe
-        Price dataframe from URL
+        Imported price dataframe from URL
     """
     df = pd.read_csv(url).dropna()
     df.index = pd.to_datetime(df['Date'])
