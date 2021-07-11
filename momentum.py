@@ -27,9 +27,7 @@ class CrossAssetMomentum():
         
         if show_analytics == True:
             self.performance_analytics(self.portfolio)                          
-        
-        return self.portfolio
-        
+                
     def get_returns(self, prices):
         """Returns the historical daily returns
         
