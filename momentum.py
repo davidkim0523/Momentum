@@ -3,7 +3,7 @@ import pandas as pd
 import pyfolio as pf
 
 class CrossAssetMomentum():
-    def __init__(self, prices, lookback_period, holding_period, n_selection, cost=0.001, signal_method='dm', weightings='emv', long_only=False):   
+    def __init__(self, prices, lookback_period, holding_period, n_selection, cost=0.001, signal_method='dm', weightings='emv', long_only=False, show_analytics=True):   
         self.returns = self.get_returns(prices)
         self.holding_returns = self.get_holding_returns(prices, holding_period)
 
@@ -24,9 +24,12 @@ class CrossAssetMomentum():
 
         self.portfolio_wo_cash = self.backtest(self.holding_returns, self.signal, self.cost, self.rebalance_weight, self.cs_risk_weight)
         self.portfolio = self.portfolio_wo_cash * self.volatility_targeting(self.portfolio_wo_cash)
-
-        self.performance_analytics(self.portfolio)              
-
+        
+        if show_analytics == True:
+            self.performance_analytics(self.portfolio)                          
+        
+        return self.portfolio
+        
     def get_returns(self, prices):
         """Returns the historical daily returns
         
