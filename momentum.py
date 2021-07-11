@@ -22,8 +22,11 @@ class CrossAssetMomentum():
         self.rebalance_weight = 1 / holding_period
         self.cost = self.transaction_cost(self.signal, cost)
 
-        self.portfolio_wo_cash = self.backtest(self.holding_returns, self.signal, self.cost, self.rebalance_weight, self.cs_risk_weight)
-        self.portfolio = self.portfolio_wo_cash * self.volatility_targeting(self.portfolio_wo_cash)
+        self.port_rets_wo_cash = self.backtest(self.holding_returns, self.signal, self.cost, self.rebalance_weight, self.cs_risk_weight)
+        
+        self.ts_risk_weight = self.volatility_targeting(self.port_rets_wo_cash)
+        
+        self.port_rets = self.port_rets_wo_cash * self.ts_risk_weight
         
         if show_analytics == True:
             self.performance_analytics(self.portfolio)                          
