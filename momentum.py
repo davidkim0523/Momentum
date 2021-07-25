@@ -29,7 +29,7 @@ class CrossAssetMomentum():
         self.port_rets = self.port_rets_wo_cash * self.ts_risk_weight
         
         if show_analytics == True:
-            self.performance_analytics(self.portfolio)                          
+            self.performance_analytics(self.port_rets)                          
                 
     def get_returns(self, prices):
         """Returns the historical daily returns
