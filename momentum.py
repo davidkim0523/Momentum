@@ -289,7 +289,7 @@ def get_price_df(url):
 if __name__ == "__main__":
     url = 'https://raw.githubusercontent.com/davidkim0523/Momentum/main/Data.csv'
     prices = get_price_df(url)
-    lookback_period = 120
+    lookback_period = 240
     holding_period = 20
     n_selection = 19
     momentum = CrossAssetMomentum(prices, lookback_period, holding_period, n_selection)
