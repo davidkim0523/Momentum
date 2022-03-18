@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-import pyfolio as pf
+import quantstats as qs
 
-class CrossAssetMomentum():
+class CrossAssetMomentum:
     def __init__(self, prices, lookback_period, holding_period, n_selection, cost=0.001, signal_method='dm', weightings='emv', long_only=False, show_analytics=True):   
         self.returns = self.get_returns(prices)
         self.holding_returns = self.get_holding_returns(prices, holding_period)
@@ -27,9 +27,9 @@ class CrossAssetMomentum():
         self.ts_risk_weight = self.volatility_targeting(self.port_rets_wo_cash)
         
         self.port_rets = self.port_rets_wo_cash * self.ts_risk_weight
-        
+
         if show_analytics == True:
-            self.performance_analytics(self.port_rets)                          
+            self.performance_analytics(self.port_rets)                  
                 
     def get_returns(self, prices):
         """Returns the historical daily returns
@@ -44,7 +44,7 @@ class CrossAssetMomentum():
         returns : dataframe
             Historical daily returns
         """
-        returns = prices.pct_change().fillna(0)
+        returns = prices.pct_change()
         return returns
 
     def get_holding_returns(self, prices, holding_period):
@@ -62,7 +62,7 @@ class CrossAssetMomentum():
         holding_returns : dataframe
             Periodic returns for each holding period. Pulled by N (holding_period) days forward to keep inline with trading signals.
         """
-        holding_returns = prices.pct_change(periods=holding_period).shift(-holding_period).fillna(0)
+        holding_returns = prices.pct_change(periods=holding_period).shift(-holding_period)
         return holding_returns
 
     def absolute_momentum(self, prices, lookback, long_only=False):
@@ -82,7 +82,7 @@ class CrossAssetMomentum():
         returns : dataframe
             Absolute momentum signals     
         """    
-        returns = prices.pct_change(periods=lookback).fillna(0)
+        returns = prices.pct_change(periods=lookback)
         long_signal = (returns > 0).applymap(self.bool_converter)
         short_signal = -(returns < 0).applymap(self.bool_converter)
         if long_only == True:
@@ -110,7 +110,7 @@ class CrossAssetMomentum():
         returns : dataframe
             Relative momentum signals     
         """
-        returns = prices.pct_change(periods=lookback).fillna(0)
+        returns = prices.pct_change(periods=lookback)
         rank = returns.rank(axis=1, ascending=False)
         long_signal = (rank <= n_selection).applymap(self.bool_converter)
         short_signal = -(rank >= len(rank.columns) - n_selection + 1).applymap(self.bool_converter)
@@ -146,12 +146,10 @@ class CrossAssetMomentum():
 
     def equal_weight(self, signal):
         """Returns Equal Weights
-
         Parameters
         ----------
         signal : dataframe
             Momentum signal dataframe
-
         Returns
         -------
         weight : dataframe
@@ -172,18 +170,16 @@ class CrossAssetMomentum():
             Historical daily returns
         signal : dataframe
             Momentum signal dataframe
-
         Returns
         -------
         weight : dataframe
             Weights using equal marginal volatility
-
         """
-        vol = (returns.rolling(252).std() * np.sqrt(252)).fillna(0)
+        vol = (returns.rolling(252).std() * np.sqrt(252))
         vol_signal = vol * abs(signal)
         inv_vol = 1 / vol_signal
         inv_vol.replace([np.inf, -np.inf], 0, inplace=True)
-        weight = inv_vol.div(inv_vol.sum(axis=1), axis=0).fillna(0)
+        weight = inv_vol.div(inv_vol.sum(axis=1), axis=0)
         return weight
 
     def volatility_targeting(self, returns, target_vol=0.01):
@@ -195,14 +191,12 @@ class CrossAssetMomentum():
             Historical daily returns of backtested portfolio
         target_vol : float, optional
             Target volatility, Default target volatility is 1%
-
         Returns
         -------
         weights : dataframe
             Weights using equal marginal volatility
-
         """
-        weight = target_vol / (returns.rolling(252).std() * np.sqrt(252)).fillna(0)
+        weight = target_vol / (returns.rolling(252).std() * np.sqrt(252))
         weight.replace([np.inf, -np.inf], 0, inplace=True)
         weight = weight.shift(1).fillna(0)
         return weight
@@ -216,12 +210,10 @@ class CrossAssetMomentum():
             Momentum signal dataframe
         cost : float, optional
             Transaction cost (%) per each trade. The default is 0.001.
-
         Returns
         -------
         cost_df : dataframe
             Transaction cost dataframe
-
         """
         cost_df = (signal.diff() != 0).applymap(self.bool_converter) * cost
         cost_df.iloc[0] = 0
@@ -229,7 +221,6 @@ class CrossAssetMomentum():
     
     def backtest(self, returns, signal, cost, rebalance_weight, weighting):
         """Returns Portfolio Returns without Time-Series Risk Weights
-
         Parameters
         ----------
         returns : dataframe
@@ -242,44 +233,36 @@ class CrossAssetMomentum():
             Rebalance weight
         weighting : dataframe
             Weighting dataframe
-
         Returns
         -------
         port_rets : dataframe
             Portfolio returns dataframe without applying time-series risk model
-
         """
         port_rets = ((signal * returns - cost) * rebalance_weight * weighting).sum(axis=1)
         return port_rets
 
     def performance_analytics(self, returns):
         """Returns Perforamnce Analytics using pyfolio package
-
         Parameters
         ----------
         returns : series
             backtestd portfolio returns
-
         Returns
         -------
         None
-
         """
-        pf.create_returns_tear_sheet(returns)
+        qs.reports.html(returns, output='./file-name.html')
 
     def bool_converter(self, bool_var):
         """Returns Integer Value from Boolean Value
-
         Parameters
         ----------
         bool_var : boolean
             Boolean variables representing trade signals
-
         Returns
         -------
         result : int
             Integer variables representing trade signals
-
         """
         if bool_var == True:
             result = 1
@@ -289,12 +272,10 @@ class CrossAssetMomentum():
 
 def get_price_df(url):
     """Returns price dataframe from given URL
-
     Parameters
     ----------
     url : string
         URL which contains dataset
-
     Returns
     -------
     df : dataframe
